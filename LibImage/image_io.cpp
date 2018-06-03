@@ -1,0 +1,365 @@
+
+#include <Windows.h>
+
+#include "png.h"
+#include "jpeglib.h"
+
+#include "image_io.h"
+
+
+namespace image
+{
+
+
+
+
+	/****************************** PNG ******************************/
+
+	void
+		load_png_headers_intern(FILE* fp, ImageHeaders* headers,
+			png_structp* png, png_infop* png_info)
+	{
+		/* Identify the PNG signature. */
+		png_byte signature[8];
+		if (std::fread(signature, 1, 8, fp) != 8)
+		{
+			std::fclose(fp);
+			throw std::exception("PNG signature could not be read");
+		}
+		if (png_sig_cmp(signature, 0, 8) != 0)
+		{
+			std::fclose(fp);
+			throw std::exception("PNG signature did not match");
+		}
+
+		/* Initialize PNG structures. */
+		*png = png_create_read_struct(PNG_LIBPNG_VER_STRING,
+			nullptr, nullptr, nullptr);
+		if (!*png)
+		{
+			std::fclose(fp);
+			throw std::exception("Out of memory");
+		}
+
+		*png_info = png_create_info_struct(*png);
+		if (!*png_info)
+		{
+			png_destroy_read_struct(png, nullptr, nullptr);
+			std::fclose(fp);
+			throw std::exception("Out of memory");
+		}
+
+		/* Init PNG file IO */
+		png_init_io(*png, fp);
+		png_set_sig_bytes(*png, 8);
+
+		/* Read PNG header info. */
+		png_read_info(*png, *png_info);
+
+		headers->width = png_get_image_width(*png, *png_info);
+		headers->height = png_get_image_height(*png, *png_info);
+		headers->channels = png_get_channels(*png, *png_info);
+
+		int const bit_depth = png_get_bit_depth(*png, *png_info);
+		if (bit_depth <= 8)
+			headers->type = IMAGE_TYPE_UINT8;
+		else if (bit_depth == 16)
+			headers->type = IMAGE_TYPE_UINT16;
+		else
+		{
+			png_destroy_read_struct(png, png_info, nullptr);
+			std::fclose(fp);
+			throw std::exception("PNG with unknown bit depth");
+		}
+	}
+
+	ByteImage::Ptr
+		load_png_file(std::string const& filename)
+	{
+		// TODO: use throw-safe FILE* wrapper
+		FILE* fp = std::fopen(filename.c_str(), "rb");
+		if (fp == nullptr)
+			throw std::exception();
+
+		/* Read PNG header info. */
+		ImageHeaders headers;
+		png_structp png = nullptr;
+		png_infop png_info = nullptr;
+		load_png_headers_intern(fp, &headers, &png, &png_info);
+
+		/* Check if bit depth is valid. */
+		int const bit_depth = png_get_bit_depth(png, png_info);
+		if (bit_depth > 8)
+		{
+			png_destroy_read_struct(&png, &png_info, nullptr);
+			std::fclose(fp);
+			throw std::exception("PNG with more than 8 bit");
+		}
+
+		/* Apply transformations. */
+		int const color_type = png_get_color_type(png, png_info);
+		if (color_type == PNG_COLOR_TYPE_PALETTE)
+			png_set_palette_to_rgb(png);
+		if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
+			png_set_expand_gray_1_2_4_to_8(png);
+		if (png_get_valid(png, png_info, PNG_INFO_tRNS))
+			png_set_tRNS_to_alpha(png);
+
+		/* Update the info struct to reflect the transformations. */
+		png_read_update_info(png, png_info);
+
+		/* Create image. */
+		ByteImage::Ptr image = ByteImage::create();
+		image->allocate(headers.width, headers.height, headers.channels);
+		ByteImage::ImageData& data = image->GetData();
+
+		/* Setup row pointers. */
+		std::vector<png_bytep> row_pointers;
+		row_pointers.resize(headers.height);
+		for (int i = 0; i < headers.height; ++i)
+			row_pointers[i] = &data[i * headers.width * headers.channels];
+
+		/* Read the whole PNG in memory. */
+		png_read_image(png, &row_pointers[0]);
+
+		/* Clean up. */
+		png_destroy_read_struct(&png, &png_info, nullptr);
+		std::fclose(fp);
+
+		return image;
+	}
+
+	void
+		save_png_file(ByteImage::ConstPtr image,
+			std::string const& filename, int compression_level)
+	{
+		if (image == nullptr)
+			throw std::invalid_argument("Null image given");
+
+		FILE *fp = std::fopen(filename.c_str(), "wb");
+		if (!fp)
+			throw std::exception(filename.c_str());
+
+		//png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
+		//    (png_voidp)user_error_ptr, user_error_fn, user_warning_fn);
+		png_structp png_ptr = png_create_write_struct
+		(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+
+		if (!png_ptr)
+		{
+			std::fclose(fp);
+			throw std::exception("Out of memory");
+		}
+
+		png_infop info_ptr = png_create_info_struct(png_ptr);
+		if (!info_ptr)
+		{
+			png_destroy_write_struct(&png_ptr, (png_infopp)nullptr);
+			std::fclose(fp);
+			throw std::exception("Out of memory");
+		}
+
+		png_init_io(png_ptr, fp);
+
+		// void write_row_callback(png_ptr, png_uint_32 row, int pass);
+		//png_set_write_status_fn(png_ptr, write_row_callback);
+
+		/* Determine color type to be written. */
+		int color_type;
+		switch (image->channels())
+		{
+		case 1: color_type = PNG_COLOR_TYPE_GRAY; break;
+		case 2: color_type = PNG_COLOR_TYPE_GRAY_ALPHA; break;
+		case 3: color_type = PNG_COLOR_TYPE_RGB; break;
+		case 4: color_type = PNG_COLOR_TYPE_RGB_ALPHA; break;
+		default:
+		{
+			png_destroy_write_struct(&png_ptr, &info_ptr);
+			std::fclose(fp);
+			throw std::exception("Cannot determine image color type");
+		}
+		}
+
+		/* Set compression level (6 seems to be the default). */
+		png_set_compression_level(png_ptr, compression_level);
+
+		/* Write image. */
+		png_set_IHDR(png_ptr, info_ptr, image->width(), image->height(),
+			8 /* Bit depth */, color_type, PNG_INTERLACE_NONE,
+			PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+		/* Setup row pointers. */
+		std::vector<png_bytep> row_pointers;
+		row_pointers.resize(image->height());
+		ByteImage::ImageData const& data = image->GetData();
+		for (int i = 0; i < image->height(); ++i)
+			row_pointers[i] = const_cast<png_bytep>(
+				&data[i * image->width() * image->channels()]);
+
+		/* Setup transformations. */
+		int png_transforms = PNG_TRANSFORM_IDENTITY;
+		//png_transforms |= PNG_TRANSFORM_INVERT_ALPHA;
+
+		/* Write to file. */
+		png_set_rows(png_ptr, info_ptr, &row_pointers[0]);
+		png_write_png(png_ptr, info_ptr, png_transforms, nullptr);
+		png_write_end(png_ptr, info_ptr);
+
+		/* Cleanup. */
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		std::fclose(fp);
+	}
+
+
+
+
+	/****************************** JPG ******************************/
+	void
+		jpg_error_handler(j_common_ptr /*cinfo*/)
+	{
+		throw std::exception("JPEG format nor recognized");
+	}
+
+	void
+		jpg_message_handler(j_common_ptr /*cinfo*/, int msg_level)
+	{
+		if (msg_level < 0)
+			throw std::exception("JPEG data corrupt");
+	}
+
+	ByteImage::Ptr
+		load_jpg_file(std::string const& filename, std::string* exif)
+	{
+		FILE* fp = std::fopen(filename.c_str(), "rb");
+		if (fp == nullptr)
+			throw std::exception(filename.c_str());
+
+		jpeg_decompress_struct cinfo;
+		jpeg_error_mgr jerr;
+		ByteImage::Ptr image;
+		try
+		{
+			/* Setup error handler and JPEG reader. */
+			cinfo.err = jpeg_std_error(&jerr);
+			jerr.error_exit = &jpg_error_handler;
+			jerr.emit_message = &jpg_message_handler;
+			jpeg_create_decompress(&cinfo);
+			jpeg_stdio_src(&cinfo, fp);
+
+			if (exif)
+			{
+				/* Request APP1 marker to be saved (this is the EXIF data). */
+				jpeg_save_markers(&cinfo, JPEG_APP0 + 1, 0xffff);
+			}
+
+			/* Read JPEG header. */
+			int ret = jpeg_read_header(&cinfo, static_cast<boolean>(false));
+			if (ret != JPEG_HEADER_OK)
+				throw std::exception("JPEG header not recognized");
+
+			/* Examine JPEG markers. */
+			if (exif)
+			{
+				jpeg_saved_marker_ptr marker = cinfo.marker_list;
+				if (marker != nullptr && marker->marker == JPEG_APP0 + 1
+					&& marker->data_length > 6
+					&& std::equal(marker->data, marker->data + 6, "Exif\0\0"))
+				{
+					char const* data = reinterpret_cast<char const*>(marker->data);
+					exif->append(data, data + marker->data_length);
+				}
+			}
+
+			if (cinfo.out_color_space != JCS_GRAYSCALE
+				&& cinfo.out_color_space != JCS_RGB)
+				throw std::exception("Invalid JPEG color space");
+
+			/* Create image. */
+			int const width = cinfo.image_width;
+			int const height = cinfo.image_height;
+			int const channels = (cinfo.out_color_space == JCS_RGB ? 3 : 1);
+			image = ByteImage::create(width, height, channels);
+			ByteImage::ImageData& data = image->GetData();
+
+			/* Start decompression. */
+			jpeg_start_decompress(&cinfo);
+
+			unsigned char* data_ptr = &data[0];
+			while (cinfo.output_scanline < cinfo.output_height)
+			{
+				jpeg_read_scanlines(&cinfo, &data_ptr, 1);
+				data_ptr += channels * cinfo.output_width;
+			}
+
+			/* Shutdown JPEG decompression. */
+			jpeg_finish_decompress(&cinfo);
+			jpeg_destroy_decompress(&cinfo);
+			std::fclose(fp);
+		}
+		catch (...)
+		{
+			jpeg_destroy_decompress(&cinfo);
+			std::fclose(fp);
+			throw;
+		}
+
+		return image;
+	}
+	
+	void
+		save_jpg_file(ByteImage::ConstPtr image, std::string const& filename, int quality)
+	{
+		if (image == nullptr)
+			throw std::invalid_argument("Null image given");
+
+		if (image->channels() != 1 && image->channels() != 3)
+			throw std::exception("Invalid image color space");
+
+		FILE* fp = std::fopen(filename.c_str(), "wb");
+		if (!fp)
+			throw std::exception(filename.c_str());
+
+		struct jpeg_compress_struct cinfo;
+		struct jpeg_error_mgr jerr;
+
+		/* Setup error handler and info object. */
+		cinfo.err = jpeg_std_error(&jerr);
+		jpeg_create_compress(&cinfo);
+		jpeg_stdio_dest(&cinfo, fp);
+
+		/* Specify image dimensions. */
+		cinfo.image_width = image->width();
+		cinfo.image_height = image->height();
+		cinfo.input_components = image->channels();
+		switch (image->channels())
+		{
+		case 1: cinfo.in_color_space = JCS_GRAYSCALE; break;
+		case 3: cinfo.in_color_space = JCS_RGB; break;
+		default:
+		{
+			jpeg_destroy_compress(&cinfo);
+			std::fclose(fp);
+			throw std::exception("Invalid image color space");
+		}
+		}
+
+		/* Set default compression parameters. */
+		jpeg_set_defaults(&cinfo);
+		jpeg_set_quality(&cinfo, quality, TRUE);
+		jpeg_start_compress(&cinfo, TRUE);
+
+		ByteImage::ImageData const& data = image->GetData();
+		int row_stride = image->width() * image->channels();
+		while (cinfo.next_scanline < cinfo.image_height)
+		{
+			JSAMPROW row_pointer = const_cast<JSAMPROW>(
+				&data[cinfo.next_scanline * row_stride]);
+			jpeg_write_scanlines(&cinfo, &row_pointer, 1);
+		}
+		jpeg_finish_compress(&cinfo);
+		jpeg_destroy_compress(&cinfo);
+		std::fclose(fp);
+	}
+
+
+}
