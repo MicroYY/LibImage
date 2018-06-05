@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 
 #include <algorithm>
@@ -10,17 +10,17 @@
 namespace image
 {
 	
-	/*****************************   ÐÎ×´³ß´çÓÐ¹Ø   *****************************/
+	/*****************************   å½¢çŠ¶å°ºå¯¸æœ‰å…³   *****************************/
 
 	/*
-		Á½ÕÅÍ¼Æ¬Ë®Æ½Æ´½Ó
+		ä¸¤å¼ å›¾ç‰‡æ°´å¹³æ‹¼æŽ¥
 	*/
 	template<typename T>
 	typename Image<T>::Ptr
 		hstack(typename Image<T>::ConstPtr img1,typename Image<T>::ConstPtr img2);
 
 	/*
-		Á½ÕÅÍ¼Æ¬´¹Ö±Æ´½Ó
+		ä¸¤å¼ å›¾ç‰‡åž‚ç›´æ‹¼æŽ¥
 	*/
 	template<typename T>
 	typename Image<T>::Ptr
@@ -28,7 +28,7 @@ namespace image
 
 
 
-	/*****************************   ÑÕÉ«ÓÐ¹Ø   *****************************/
+	/*****************************   é¢œè‰²æœ‰å…³   *****************************/
 
 	enum cvtType
 	{
@@ -50,7 +50,7 @@ namespace image
 		hstack(typename Image<T>::ConstPtr img1, typename Image<T>::ConstPtr img2)
 	{
 		if (img1->height() != img2->height() || img1->channels() != img2->channels())
-			throw std::invalid_argument("Á½·ùÍ¼Æ¬ÎÞ·¨Ë®Æ½Æ´½Ó");
+			throw std::invalid_argument("ä¸¤å¹…å›¾ç‰‡æ— æ³•æ°´å¹³æ‹¼æŽ¥");
 
 		Image<T>::Ptr ret = Image<T>::create(img1->width() + img2->width(),
 			img1->height(),
@@ -73,7 +73,7 @@ namespace image
 		vstack(typename Image<T>::ConstPtr img1, typename Image<T>::ConstPtr img2)
 	{
 		if (img1->width() != img2->width() || img1->channels() != img2->channels())
-			throw std::invalid_argument("Á½·ùÍ¼Æ¬ÎÞ·¨´¹Ö±Æ´½Ó");
+			throw std::invalid_argument("ä¸¤å¹…å›¾ç‰‡æ— æ³•åž‚ç›´æ‹¼æŽ¥");
 
 		Image<T>::Ptr ret = Image<T>::create(img1->width(),
 			img1->height() + img2->height(),
