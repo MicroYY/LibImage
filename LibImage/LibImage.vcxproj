@@ -24,9 +24,11 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="functions.h" />
     <ClInclude Include="image.h" />
     <ClInclude Include="image_io.h" />
     <ClInclude Include="image_tools.h" />
+    <ClInclude Include="math.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

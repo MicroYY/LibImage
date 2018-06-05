@@ -4,12 +4,12 @@
 #include <algorithm>
 
 #include "image.h"
-
+#include "functions.h"
 
 
 namespace image
 {
-	
+
 	/*****************************   形状尺寸有关   *****************************/
 
 	/*
@@ -17,7 +17,7 @@ namespace image
 	*/
 	template<typename T>
 	typename Image<T>::Ptr
-		hstack(typename Image<T>::ConstPtr img1,typename Image<T>::ConstPtr img2);
+		hstack(typename Image<T>::ConstPtr img1, typename Image<T>::ConstPtr img2);
 
 	/*
 		两张图片垂直拼接
@@ -41,12 +41,20 @@ namespace image
 
 	template<typename T>
 	typename Image<T>::Ptr
-		RGB2Gray(typename Image<T>::ConstPtr img,cvtType type);
+		RGB2Gray(typename Image<T>::ConstPtr img, cvtType type);
 
 
+
+
+
+
+
+
+
+	/*****************************   implementation   *****************************/
 
 	template<typename T>
-	typename Image<T>::Ptr 
+	typename Image<T>::Ptr
 		hstack(typename Image<T>::ConstPtr img1, typename Image<T>::ConstPtr img2)
 	{
 		if (img1->height() != img2->height() || img1->channels() != img2->channels())
@@ -69,7 +77,7 @@ namespace image
 	}
 
 	template<typename T>
-	typename Image<T>::Ptr 
+	typename Image<T>::Ptr
 		vstack(typename Image<T>::ConstPtr img1, typename Image<T>::ConstPtr img2)
 	{
 		if (img1->width() != img2->width() || img1->channels() != img2->channels())
@@ -82,6 +90,7 @@ namespace image
 		std::copy(img2->begin(), img2->end(), ret->begin() + img1->GetValueAmount());
 		return ret;
 	}
+
 
 
 	template<typename T>
@@ -97,12 +106,34 @@ namespace image
 	{
 		T const* max = std::max_element(v, v + 3);
 		T const* min = std::min_element(v, v + 3);
-
+		return math::interpolate(*max, *min, 0.5f, 0.5f);
 	}
 
 	template<typename T>
-	typename Image<T>::Ptr 
-		RGB2Gray(typename Image<T>::ConstPtr img, cvtType type)
+	inline T
+		RGB2Gray_luminosity(T const* v)
+	{
+		return math::interpolate(v[0], v[1], v[2], 0.21f, 0.72f, 0.07f);
+	}
+
+	template<typename T>
+	inline T
+		RGB2Gray_luminance(T const* v)
+	{
+		return math::interpolate(v[0], v[1], v[2], 0.30f, 0.59f, 0.11f);
+	}
+
+	template<typename T>
+	inline T
+		RGB2Gray_average(T const* v)
+	{
+		float third(1.0f / 3.0f);
+		return math::interpolate(v[0], v[1], v[2], third, third, third);
+	}
+
+	template<typename T>
+	typename Image<T>::Ptr
+		RGB2Gray(typename Image<T>::ConstPtr img, cvtType type = CVT_TYPE_AVERAGE)
 	{
 		if (img == nullptr)
 			throw std::invalid_argument("Null image given");
@@ -113,26 +144,46 @@ namespace image
 
 		bool has_alpha = (channels == 4);
 
-		typename Image<T>::Ptr out(Image<T>::Create());
-		out->allocate(img->widht(), img->height(), 1 + has_alpha);
+		typename Image<T>::Ptr out(Image<T>::create());
+		out->allocate(img->width(), img->height(), 1 + has_alpha);
 
 		typedef T(*RGB2GrayFunc)(T const*);
 		RGB2GrayFunc func;
 		switch (type)
 		{
-		case image::CVT_TYPE_MAXIMUM:
+		case CVT_TYPE_MAXIMUM:
+			func = RGB2Gray_maximum<T>;
 			break;
-		case image::CVT_TYPE_LIGHTNESS:
+		case CVT_TYPE_LIGHTNESS:
+			func = RGB2Gray_lightness;
 			break;
-		case image::CVT_TYPE_LUMINOSITY:
+		case CVT_TYPE_LUMINOSITY:
+			func = RGB2Gray_luminosity;
 			break;
-		case image::CVT_TYPE_LUMINANCE:
+		case CVT_TYPE_LUMINANCE:
+			func = RGB2Gray_luminance;
 			break;
-		case image::CVT_TYPE_AVERAGE:
+		case CVT_TYPE_AVERAGE:
+			func = RGB2Gray_average;
 			break;
 		default:
+			throw std::invalid_argument("Invalid conversion type");
 			break;
 		}
+		int outpos = 0;
+		int inpos = 0;
+		int pixels = img->GetPixelAmount();
+		for (int i = 0; i < pixels; i++)
+		{
+			T const* v = &img->at(inpos);
+			//每个像素插值
+			out->at(outpos) = func(v);
+			if (has_alpha)
+				out->at(outpos + 1) = img->at(inpos + 3);
+			outpos += 1 + has_alpha;
+			inpos += 3 + has_alpha;
+		}
+		return out;
 	}
 
 }

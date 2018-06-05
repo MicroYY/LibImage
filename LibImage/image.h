@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <memory>
 #include <vector>
@@ -48,7 +48,7 @@ namespace image
 	public:
 
 		/*
-			¹¹Ôìº¯Êı
+			æ„é€ å‡½æ•°
 		*/
 		Image();
 		~Image();
@@ -68,25 +68,25 @@ namespace image
 		bool valid() const;
 
 		/*
-			·µ»ØÍ¼ÏñÀàĞÍ
+			è¿”å›å›¾åƒç±»å‹
 		*/
 		ImageType GetType() const;
 
 
 		/*
-			·µ»ØÊı¾İ¼¯ºÏ
+			è¿”å›æ•°æ®é›†åˆ
 		*/
 		ImageData const& GetData() const;
 		ImageData& GetData();
 
 		/*
-			·µ»ØÊı¾İÖ¸Õë
+			è¿”å›æ•°æ®æŒ‡é’ˆ
 		*/
 		T const* GetDataPointer() const;
 		T* GetDataPointer();
 
 		/*
-			µü´úÆ÷
+			è¿­ä»£å™¨
 		*/
 		T* begin();
 		T const* begin() const;
@@ -94,13 +94,13 @@ namespace image
 		T const* end() const;
 
 		/*
-			ÏñËØÊıÁ¿ÓëÏñËØÖµÊıÁ¿
+			åƒç´ æ•°é‡ä¸åƒç´ å€¼æ•°é‡
 		*/
 		int GetPixelAmount() const;
 		int GetValueAmount() const;
 
 		/*
-			Ë÷Òı
+			ç´¢å¼•
 		*/
 		T const& at(int index) const;
 		T& at(int index);
@@ -112,7 +112,7 @@ namespace image
 		T& at(int x, int y, int channel);
 
 		/*
-			²Ù×÷·ûÖØÔØ
+			æ“ä½œç¬¦é‡è½½
 		*/
 		T& operator[] (int index);
 		T const& operator[] (int index) const;
@@ -125,7 +125,7 @@ namespace image
 		T const& operator() (int x, int y, int channel) const;
 
 		/*
-			Ò»Ğ©»ù±¾²Ù×÷
+			ä¸€äº›åŸºæœ¬æ“ä½œ
 		*/
 		void fill(T const& value);
 
@@ -371,17 +371,19 @@ namespace image
 	{
 		return static_cast<int>(this->data.size());
 	}
+
 	template<typename T>
 	inline T const&
 		Image<T>::at(int index) const
 	{
 		return this->data[index];
 	}
+
 	template<typename T>
 	inline T&
 		Image<T>::at(int index)
 	{
-		return this->data[0];
+		return this->data[index];
 	}
 
 	template<typename T>
