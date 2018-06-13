@@ -4,6 +4,7 @@
 
 #include "image_io.h"
 #include "image_tools.h"
+#include "shape.h"
 
 int main()
 {
