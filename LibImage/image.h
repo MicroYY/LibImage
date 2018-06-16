@@ -3,6 +3,8 @@
 #include <memory>
 #include <vector>
 
+#include "shape.h"
+
 
 namespace image
 {
@@ -24,7 +26,7 @@ namespace image
 		IMAGE_TYPE_DOUBLE
 	};
 
-	template<typename T> 
+	template<typename T>
 	class Image;
 	typedef Image<uint8_t> ByteImage;
 	typedef Image<uint16_t> RawImage;
@@ -55,9 +57,15 @@ namespace image
 		Image(int width, int height, int channels);
 		Image(Image<T> const& src);
 
+		Image(Image<T> const& src, shape::Rect const& roi);
+
+
+
 		static Ptr create();
 		static Ptr create(int width, int height, int channels);
 		static Ptr create(Image<T> const& src);
+
+		static Ptr create(Image<T> const& src, shape::Rect const& roi);
 
 		int width() const;
 		int height() const;
@@ -124,6 +132,8 @@ namespace image
 		T& operator() (int x, int y, int channel);
 		T const& operator() (int x, int y, int channel) const;
 
+
+
 		/*
 			一些基本操作
 		*/
@@ -165,6 +175,25 @@ namespace image
 	}
 
 	template<typename T>
+	Image<T>::Image(Image<T> const & src, shape::Rect const & roi)
+		:w(roi.width), h(roi.height), c(src.c)
+	{
+		if (src.w < (roi.width + roi.x) || src.h < (roi.height + roi.y))
+			throw std::invalid_argument("ROI must be smaller than src");
+
+		this->data.resize(roi.width * roi.height * src.c);
+		auto iterDst = this->begin();
+		int offDst = roi.width * src.c;
+		auto iterSrc = src.begin();
+		iterSrc += (roi.y * this->w + roi.x) * this->c;
+		int offSrc = src.w * src.c;
+		for (; iterDst < this->end(); iterSrc += offSrc, iterDst += offDst)
+		{
+			std::copy(iterSrc, iterSrc + offDst, iterDst);
+		}
+	}
+
+	template<typename T>
 	inline typename Image<T>::Ptr
 		Image<T>::create()
 	{
@@ -172,15 +201,24 @@ namespace image
 	}
 
 	template<typename T>
-	inline typename Image<T>::Ptr Image<T>::create(int width, int height, int channels)
+	inline typename Image<T>::Ptr
+		Image<T>::create(int width, int height, int channels)
 	{
 		return Ptr(new Image<T>(width, height, channels));
 	}
 
 	template<typename T>
-	inline typename Image<T>::Ptr Image<T>::create(Image<T> const & src)
+	inline typename Image<T>::Ptr
+		Image<T>::create(Image<T> const & src)
 	{
 		return Ptr(new Image<T>(src));
+	}
+
+	template<typename T>
+	inline typename Image<T>::Ptr
+		Image<T>::create(Image<T> const & src, shape::Rect const & roi)
+	{
+		return Ptr(new Image<T>(src, roi));
 	}
 
 	template<typename T>
@@ -216,6 +254,7 @@ namespace image
 		this->c = channels;
 		this->data.resize(width * height * channels);
 	}
+
 	template<typename T>
 	inline bool
 		Image<T>::valid() const
@@ -473,7 +512,7 @@ namespace image
 
 
 	template<typename T>
-	inline void 
+	inline void
 		Image<T>::fill(T const & value)
 	{
 		std::fill(this->data.begin(), this->data.end(), value);

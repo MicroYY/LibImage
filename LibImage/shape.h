@@ -14,7 +14,7 @@ namespace shape
 		T y;
 
 		Point2_() :x(T(0)), y(T(0)) {}
-		Point2_(T _x, T _y) :x(_x),y(_y) {}
+		Point2_(T _x, T _y) :x(_x), y(_y) {}
 		Point2_(Point2_ const& src) :x(src.x), y(src.y) {}
 
 	};
@@ -56,22 +56,23 @@ namespace shape
 
 
 	/*
-		¾ØÐÎ	
+		¾ØÐÎ
 	*/
 	template<typename T>
 	struct Rect_
 	{
-		Point2_<T> pt;
+		T x, y;
 		T width, height;
 
 		Rect_() {}
-		Rect_(Point2_ _pt, T _width, T _height) :pt(_pt), width(_width), height(_height) 
+		Rect_(T _x, T _y, T _width, T _height) :x(_x), y(_y), width(_width), height(_height)
 		{
-			if (_width <= 0 || _height <= 0)
-				throw std::invalid_argument("Width and height must be >0");
+			if (_width <= 0 || _height <= 0 || _x < 0 || _y < 0)
+				throw std::invalid_argument("Invaild parameter");
 		};
-		Rect_(Rect_ const& src) :pt(src.pt), width(src.width), height(src.height) {};
-		Rect_(T _x, T _y, T _width, T _height) :pt(_x, _y), width(_width), height(_height) {}
+
+		Rect_(Rect_ const& src) :x(src.x), y(src.y), width(src.width), height(src.height) {};
+
 
 	};
 
