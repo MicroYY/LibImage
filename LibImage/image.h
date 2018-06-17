@@ -132,7 +132,7 @@ namespace image
 		T& operator() (int x, int y, int channel);
 		T const& operator() (int x, int y, int channel) const;
 
-
+		Ptr operator()(shape::Rect const& roi) const;
 
 		/*
 			一些基本操作
@@ -509,6 +509,15 @@ namespace image
 	{
 		return this->data[channel + this->c * (x + this->w * y)];
 	}
+
+	template<typename T>
+	inline typename Image<T>::Ptr 
+		Image<T>::operator()(shape::Rect const & roi) const
+	{
+		return Ptr(new Image<T>(*this,roi));
+	}
+
+
 
 
 	template<typename T>
