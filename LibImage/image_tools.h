@@ -5,10 +5,16 @@
 
 #include "image.h"
 #include "functions.h"
+#include "color.h"
 
 
 namespace image
 {
+	/*
+		用固定RGB填充图片
+	*/
+	ByteImage::Ptr fill(ByteImage::ConstPtr src, Color const& color);
+
 
 	/*****************************   形状尺寸有关   *****************************/
 

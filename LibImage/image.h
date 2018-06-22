@@ -6,6 +6,7 @@
 #include "shape.h"
 
 
+
 namespace image
 {
 	enum ImageType
@@ -66,6 +67,7 @@ namespace image
 		static Ptr create(Image<T> const& src);
 
 		static Ptr create(Image<T> const& src, shape::Rect const& roi);
+
 
 		int width() const;
 		int height() const;
@@ -138,7 +140,6 @@ namespace image
 			一些基本操作
 		*/
 		void fill(T const& value);
-
 
 	private:
 		int w, h, c;

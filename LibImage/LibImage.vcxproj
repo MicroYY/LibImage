@@ -24,6 +24,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="color.h" />
     <ClInclude Include="functions.h" />
     <ClInclude Include="image.h" />
     <ClInclude Include="image_io.h" />
