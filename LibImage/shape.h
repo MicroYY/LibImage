@@ -17,6 +17,12 @@ namespace shape
 		Point2_(T _x, T _y) :x(_x), y(_y) {}
 		Point2_(Point2_ const& src) :x(src.x), y(src.y) {}
 
+		void swap(Point2_& other)
+		{
+			Point2_ temp(other);
+			other = this;
+			this = temp;
+		}
 	};
 
 	typedef Point2_<int> Point2i;

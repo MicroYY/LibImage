@@ -7,6 +7,7 @@
 
 
 
+
 namespace image
 {
 	enum ImageType
@@ -38,6 +39,7 @@ namespace image
 
 
 
+
 	template<typename T>
 	class Image
 	{
@@ -59,7 +61,7 @@ namespace image
 		Image(Image<T> const& src);
 
 		Image(Image<T> const& src, shape::Rect const& roi);
-
+		
 
 
 		static Ptr create();
@@ -527,4 +529,6 @@ namespace image
 	{
 		std::fill(this->data.begin(), this->data.end(), value);
 	}
+
+
 }

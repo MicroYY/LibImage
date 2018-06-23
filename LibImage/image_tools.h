@@ -8,12 +8,22 @@
 #include "color.h"
 
 
+
 namespace image
 {
+	
 	/*
-		用固定RGB填充图片
+		用固定RGB填充整个图片
 	*/
-	ByteImage::Ptr fill(ByteImage::ConstPtr src, Color const& color);
+	void fill(ByteImage::Ptr src, Color const& color);
+
+	/*****************************   绘制图形   *****************************/
+
+	/*
+		画线段
+	*/
+	void line(ByteImage::Ptr src, shape::Line const& l,Color const& color);
+	void line(ByteImage::Ptr src, shape::Point const& pt1, shape::Point const& pt2, Color const& color);
 
 
 	/*****************************   形状尺寸有关   *****************************/
