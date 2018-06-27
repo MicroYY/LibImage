@@ -27,7 +27,7 @@ int main()
 	image::save_png_file(img2, "2.png");*/
 	image::ByteImage::Ptr i = image::ByteImage::create(1000, 1000, 3);
 	image::fill(i, image::Color(0, 0, 255));
-	image::line(i, shape::Point(900,50),shape::Point(20,900), image::Color(0, 255, 255));
+	image::line(i, shape::Point(900,20),shape::Point(20,900), image::Color(0, 255, 255));
 	image::save_png_file(i, "9.png");
 
 	return 0;

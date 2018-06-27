@@ -41,7 +41,9 @@ namespace image
 			throw std::invalid_argument("Line must not be beyond the image");
 		if (pt1.x == pt2.x)
 		{
-			for (int i = pt1.y; i <= pt2.y; i++)
+			int max = std::max(pt1.y, pt2.y);
+			int min = std::min(pt1.y, pt2.y);
+			for (int i = min; i <= max; i++)
 			{
 				int x = pt1.x;
 				int y = i;
@@ -53,7 +55,9 @@ namespace image
 		}
 		else if (pt1.y == pt2.y)
 		{
-			for (int i = pt1.x; i <= pt2.x; i++)
+			int max = std::max(pt1.x, pt2.x);
+			int min = std::min(pt1.x, pt2.x);
+			for (int i = min; i <= max; i++)
 			{
 				int x = i;
 				int y = pt1.y;
@@ -65,17 +69,63 @@ namespace image
 		}
 		else
 		{
-			
 			float tan = static_cast<float>(pt2.y - pt1.y) / (pt2.x - pt1.x);
-			for (int i = pt1.x; i <= pt2.x; i++)
+			if (std::abs(tan) <= 1)
 			{
-				int x = i;
-				int y = std::round(tan * (i - pt1.x) + pt1.y);
-				src->at(x, y, 0) = color.red;
-				src->at(x, y, 1) = color.green;
-				src->at(x, y, 2) = color.blue;
+				if (pt1.x < pt2.x)
+				{
+					for (int i = pt1.x; i <= pt2.x; i++)
+					{
+						int x = i;
+						int y = std::round(tan * (i - pt1.x) + pt1.y);
+						src->at(x, y, 0) = color.red;
+						src->at(x, y, 1) = color.green;
+						src->at(x, y, 2) = color.blue;
+					}
+					return;
+				}
+				else
+				{
+					for (int i = pt2.x; i <= pt1.x; i++)
+					{
+						int x = i;
+						int y = std::round(tan * (i - pt2.x) + pt2.y);
+						src->at(x, y, 0) = color.red;
+						src->at(x, y, 1) = color.green;
+						src->at(x, y, 2) = color.blue;
+					}
+					return;
+				}
+
 			}
-			return;
+			else
+			{
+				if (pt1.y < pt2.y)
+				{
+					for (int i = pt1.y; i < pt2.y; i++)
+					{
+						int x = std::round((i - pt1.y) / tan + pt1.x);
+						int y = i;
+						src->at(x, y, 0) = color.red;
+						src->at(x, y, 1) = color.green;
+						src->at(x, y, 2) = color.blue;
+					}
+					return;
+				}
+				else
+				{
+					for (int i = pt2.y; i < pt1.y; i++)
+					{
+						int x = std::round((i - pt2.y) / tan + pt2.x);
+						int y = i;
+						src->at(x, y, 0) = color.red;
+						src->at(x, y, 1) = color.green;
+						src->at(x, y, 2) = color.blue;
+					}
+					return;
+				}
+			}
+
 		}
 	}
 
