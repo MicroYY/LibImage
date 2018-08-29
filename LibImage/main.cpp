@@ -25,10 +25,19 @@ int main()
 	/*image::ByteImage::Ptr in = image::load_jpg_file("../l.jpg");
 	image::ByteImage::Ptr img2 = image::hstack<uint8_t>(img, img);
 	image::save_png_file(img2, "2.png");*/
-	image::ByteImage::Ptr i = image::ByteImage::create(1000, 1000, 3);
+
+	/*image::ByteImage::Ptr i = image::ByteImage::create(1000, 1000, 3);
 	image::fill(i, image::Color(0, 0, 255));
 	image::line(i, shape::Point(900,20),shape::Point(20,900), image::Color(0, 255, 255));
-	image::save_png_file(i, "9.png");
+	image::save_png_file(i, "9.png");*/
+
+	//image::ByteImage::Ptr i = image::ByteImage::create(1200, 1000, 3);
+	//image::fill(i, image::Color(0, 0, 0));
+	//image::fillRect(i, image::Color(255, 255, 255), shape::Rect(100, 50, 50, 20));
+	//image::save_png_file(i, "i.png");
+
+	image::ByteImage::Ptr ii = image::generateChessoard(11, 8, 60);
+	image::save_png_file(ii, "ii.png");
 
 	return 0;
 }

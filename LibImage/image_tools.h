@@ -17,6 +17,11 @@ namespace image
 	*/
 	void fill(ByteImage::Ptr src, Color const& color);
 
+	/*
+		用固定RGB填充某个矩形区域
+	*/
+	void fillRect(ByteImage::Ptr src, Color const& color, shape::Rect roi);
+
 	/*****************************   绘制图形   *****************************/
 
 	/*
@@ -24,6 +29,9 @@ namespace image
 	*/
 	void line(ByteImage::Ptr src, shape::Line const& l,Color const& color);
 	void line(ByteImage::Ptr src, shape::Point const& pt1, shape::Point const& pt2, Color const& color);
+
+	ByteImage::Ptr generateChessoard(int rows, int columns, int cube);
+
 
 
 	/*****************************   形状尺寸有关   *****************************/
